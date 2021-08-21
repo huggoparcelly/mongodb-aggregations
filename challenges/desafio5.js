@@ -5,10 +5,11 @@ db.movies.aggregate(
       {
         countries: "USA",
         "tomatoes.viewer.rating": { $gte: 3 },
+        cast: { $exists: true },
       },
     },
     {
-      $let:
+      $addFields:
       {
         favorites:
         [
@@ -20,10 +21,29 @@ db.movies.aggregate(
         ],
       },
     },
+    {
+      $addFields:
+      {
+        listaIntersection:
+        {
+          $setIntersection: ["$cast", "$favorites"],
+        },
+      },
+    },
+    {
+      $addFields:
+      {
+        num_favs: { $size: "$listaIntersection" },
+      },
+    },
+    { $sort: { num_favs: -1, "tomatoes.viewer.rating": -1, title: -1 } },
+    { $limit: 25 },
+    { $skip: 24 },
+    { $project:
+      {
+        _id: 0,
+        title: "$title",
+      },
+    },
   ],
 );
-
-// criar uma variável com os atores favoritos
-// comparar cast com a nova variável com o setIntersection
-// verificar quantos tem dentro de setIntersection com o $size
-// retornar o 25 filme, apenas o titulo.
